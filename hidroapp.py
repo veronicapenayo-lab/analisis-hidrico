@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import io
-# Importamos tus funciones originales
+# Importamos funciones originales
 from analisis_hidrometrico import leer_archivo, convertir_formatos, estadisticas
 
 st.set_page_config(page_title="Soluciones digitales", layout="wide")
@@ -10,7 +10,7 @@ st.set_page_config(page_title="Soluciones digitales", layout="wide")
 st.title("Sistema de análisis e intercomparación de estaciones hidrométricas")
 st.markdown("Cargá los archivos para generar el tablero de control.")
 
-# --- BARRA LATERAL (Para que quede más limpio) ---
+# --- BARRA LATERAL ---
 with st.sidebar:
     st.header("Configuración")
     archivos_subidos = st.file_uploader("Subí archivos .txt", type="txt", accept_multiple_files=True)
@@ -42,7 +42,7 @@ if archivos_subidos:
         # Agregamos al gráfico
         ax.plot(fechas, alturas, label=f"{archivo.name}", alpha=0.8, linewidth=1)
 
-    # --- 1. TABLA DE RESUMEN (Ahora arriba) ---
+    # --- 1. TABLA DE RESUMEN ---
     st.subheader("Resumen estadístico comparativo")
     df_resumen = pd.DataFrame(resumen_datos)
     st.dataframe(df_resumen, use_container_width=True) # Una tabla más moderna
@@ -57,7 +57,7 @@ st.info("💡 Tip: Podés hacer zoom seleccionando un área con el mouse o doble
 if archivos_subidos:
     df_grafico = pd.DataFrame()
     for arc in archivos_subidos:
-        # Aquí usamos tus funciones ya conocidas
+        # Usamos las funciones conocidas
         encabezado, datos = leer_archivo(f"temp_{arc.name}.txt") # Usamos nombres únicos
         fechas, caudales = convertir_formatos(datos)
         
@@ -69,11 +69,11 @@ if archivos_subidos:
         else:
             df_grafico = df_grafico.join(serie_estacion, how='outer')
 
-    # El comando "mágico" para el gráfico interactivo
+    # Gráfico interactivo
     st.line_chart(df_grafico)
 
 
-    # --- 3. EXPORTACIÓN PROFESIONAL ---
+    # --- 3. EXPORTACIÓN ---
     st.subheader("📥 Generar informe")
     
     # Creamos el Excel en memoria
@@ -91,9 +91,9 @@ if archivos_subidos:
             worksheet.set_column(col_num, col_num, 20) # Ancho de columna
 
     st.download_button(
-        label="Descargar Reporte Profesional en Excel (.xlsx)",
+        label="Descargar reporte(.xlsx)",
         data=output.getvalue(),
-        file_name="reporte_hidrologico_profesional.xlsx",
+        file_name="reporte_hidrológico.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
