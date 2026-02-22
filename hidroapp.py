@@ -17,68 +17,51 @@ with st.sidebar:
     st.info("Podés subir varios archivos a la vez para compararlos.")
 
 if archivos_subidos:
-    resumen_datos = []
-    fig, ax = plt.subplots(figsize=(12, 5))
+    df_global = pd.DataFrame()
+    resumen_lista = []
     
-    # Procesamiento de cada archivo
-    for archivo in archivos_subidos:
-        with open("temp.txt", "wb") as f:
-            f.write(archivo.getbuffer())
-        
-        encabezado, datos = leer_archivo("temp.txt")
-        fechas, alturas = convertir_formatos(datos)
-        v_medio, v_max, v_min, desv, m_max, m_min = estadisticas(alturas, fechas)
-        
-        # Guardamos datos para la tabla (Agregamos las fechas de los extremos)
-        resumen_datos.append({
-            "Estación": archivo.name,
-            "Caudal Medio (m³/s)": round(v_medio, 2),
-            "Máximo Histórico": round(v_max, 2),
-            "Fecha Máximo": m_max,
-            "Mínimo Histórico": round(v_min, 2),
-            "Fecha Mínimo": m_min
-        })
-        
-        # Agregamos al gráfico
-        ax.plot(fechas, alturas, label=f"{archivo.name}", alpha=0.8, linewidth=1)
-
-    # --- 1. TABLA DE RESUMEN ---
-    st.subheader("Resumen estadístico comparativo")
-    df_resumen = pd.DataFrame(resumen_datos)
-    st.dataframe(df_resumen, use_container_width=True) # Una tabla más moderna
-    
-    
-    
-    # --- GRÁFICO INTERACTIVO ---
-st.subheader("Hidrogramas comparativos")
-st.info("💡 Tip: Podés hacer zoom seleccionando un área con el mouse o doble clic para volver al inicio.")
-
-# Creamos un DataFrame que una todas las series por fecha
-if archivos_subidos:
-    df_grafico = pd.DataFrame()
     for arc in archivos_subidos:
-        # Usamos las funciones conocidas
-        encabezado, datos = leer_archivo(f"temp_{arc.name}.txt") # Usamos nombres únicos
+        # Decodificamos el archivo subido a texto directamente
+        contenido = arc.getvalue().decode("windows-1252").splitlines()
+        
+        # Pasamos la lista de líneas de la función
+        encabezado, datos = leer_archivo(contenido)
         fechas, caudales = convertir_formatos(datos)
-        
-        # Creamos una serie temporal para esta estación
-        serie_estacion = pd.Series(caudales, index=fechas, name=arc.name)
-        
-        if df_grafico.empty:
-            df_grafico = serie_estacion.to_frame()
+        # Obtenemos las estadísticas reales
+        v_medio, v_max, v_min, desv, m_max, m_min = estadisticas(caudales, fechas)
+        # Preparamos los datos para el gráfico comparativo
+        temp_df = pd.DataFrame({'Fecha': fechas, arc.name: caudales})
+        temp_df.set_index('Fecha', inplace=True)
+        if df_global.empty:
+            df_global = temp_df
         else:
-            df_grafico = df_grafico.join(serie_estacion, how='outer')
+            df_global = df_global.join(temp_df, how='outer')
 
-    # Gráfico interactivo
-    st.line_chart(df_grafico)
+        # Guardamos la info para la tabla y el Excel
+        resumen_lista.append({
+            "Estación": arc.name,
+            "Caudal Medio (m3/s)": round(v_medio, 2),
+            "Máximo Histórico": round(v_max, 2),
+            "Mínimo Histórico": round(v_min, 2),
+            "Procesamiento": "Relleno con Media"
+        })
 
 
-    # --- 3. EXPORTACIÓN ---
-    st.subheader("📥 Generar informe")
+    #  TABLA DE RESULTADOS
+    st.subheader("Resumen estadístico comparativo")
+    df_resumen = pd.DataFrame(resumen_lista)
+    st.dataframe(df_resumen, use_container_width=True)
     
-    # Creamos el Excel en memoria
-    output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+    #  INTERFAZ VISUAL: GRÁFICO INTERACTIVO
+    st.subheader("Hidrogramas de Caudales")
+    st.info("💡 Tip: Seleccioná un área del gráfico con el mouse para hacer zoom.")
+    st.line_chart(df_global)
+    
+
+    #  EXPORTAR A EXCEL 
+    st.subheader("📥 Generar informe")
+    buffer = io.BytesIO()
+    with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
         df_resumen.to_excel(writer, index=False, sheet_name='Estadisticas')
         
         # Aplicamos un poco de formato al Excel
@@ -89,13 +72,22 @@ if archivos_subidos:
         for col_num, value in enumerate(df_resumen.columns.values):
             worksheet.write(0, col_num, value, header_format)
             worksheet.set_column(col_num, col_num, 20) # Ancho de columna
-
+    
     st.download_button(
-        label="Descargar reporte(.xlsx)",
-        data=output.getvalue(),
-        file_name="reporte_hidrológico.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        label="Descargar reporte en Excel (.xlsx)",
+        data=buffer.getvalue(),
+        file_name="reporte_hidrologico.xlsx",
+        mime="application/vnd.ms-excel"
     )
-
+    
 else:
-    st.warning("👈 Por favor, subí al menos un archivo en la barra lateral para comenzar.")
+       st.warning("👈 Por favor, subí al menos un archivo en la barra lateral para comenzar.") 
+    
+#%% 
+    
+ 
+    
+ 
+    
+ 
+    

@@ -26,12 +26,11 @@ import calendar
 
 # Definimos una función que permita leer un archivo en formato .txt y lo separe en secciones.
 
-def leer_archivo (archivo):
+def leer_archivo (lineas):
    
     """
     Lee un archivo txt y separa encabezado y datos.
-    Parámetro: 
-        archivo (archivo txt).
+
     Retorna: 
         lista: encabezado.
         lista: datos.
@@ -40,25 +39,22 @@ def leer_archivo (archivo):
     # Creamos listas vacías donde se guardará la información del archivo txt.
     encabezado =[]  
     datos =[]
-    # Abrimos archivo en modo lectura.
-    with open(archivo, "r", encoding="windows-1252") as archivo:
-         for linea in archivo:
-            linea = linea.strip()
-
+    for linea in lineas:
+        linea = linea.strip()
             # Ignoramos líneas vacías
-            if not linea:
+        if not linea:
                 continue
 
-            # Si empieza con "#" es encabezado
-            if linea.startswith("#"):
+    # Si empieza con "#" es encabezado
+        if linea.startswith("#"):
                 encabezado.append(linea)
                 continue
 
-            # Si tiene el patrón típico de columnas (separadas por ";"), guardamos como dato
-            partes = linea.split(";")
-            if len(partes) == 5 and partes[0].count("-") == 2 and partes[0][:4].isdigit():
+     # Si tiene el patrón típico de columnas (separadas por ";"), guardamos como dato
+        partes = linea.split(";")
+        if len(partes) == 5 and partes[0].count("-") == 2 and partes[0][:4].isdigit():
                 datos.append(partes)
-            else:
+        else:
                 encabezado.append(linea)
     return encabezado, datos
     
@@ -257,33 +253,41 @@ def graficos(fechas_array, alturas_masked, stid):
     plt.xticks(range(1,13), calendar.month_abbr[1:13])
     plt.tight_layout()
     plt.show()
-
+    
+    
     # ----------------------------------------------------
-    # Serie con interpolación y ciclo anual interpolado
+    # Serie con reemplazo por Media y ciclo anual medio
     # ----------------------------------------------------
-    df_interpolado  = df.copy()
-    df_interpolado['caudal'] = df['caudal'].interpolate()
 
-    ciclo_anual_interpolado = df_interpolado.groupby(df_interpolado['fecha'].dt.month)['caudal'].mean()
+    # 1. Calculamos la media de la serie original (ignorando los nulos)
+    media_serie = df['caudal'].mean()
 
-    # Serie temporal interpolada
+    # 2. Creamos la copia y reemplazamos los faltantes con esa media
+    df_media = df.copy()
+    df_media['caudal'] = df['caudal'].fillna(media_serie) 
+
+    # 3. Calculamos el ciclo anual con estos datos
+    ciclo_anual_media = df_media.groupby(df_media['fecha'].dt.month)['caudal'].mean()
+
+    # --- Serie temporal con reemplazo por Media ---
     plt.figure(figsize=(10,5))
-    plt.plot(df_interpolado['fecha'], df_interpolado['caudal'], color='orange')
-    plt.title(f"Serie temporal con valores interpolados: {stid}")
+    plt.plot(df_media['fecha'], df_media['caudal'], color='green')
+    plt.title(f"Serie temporal (reemplazado por media): {stid}")
     plt.xlabel("Fecha")
     plt.ylabel("Caudal (m³/s)")
     plt.tight_layout()
     plt.show()
 
-    # Ciclo anual interpolado
+    # --- Ciclo anual medio ---
     plt.figure(figsize=(8,5))
-    plt.plot(ciclo_anual_interpolado.index, ciclo_anual_interpolado.values, color='blue', marker='o')
-    plt.title(f"Ciclo anual medio (valores interpolados): {stid}")
+    plt.plot(ciclo_anual_media.index, ciclo_anual_media.values, color='darkblue', marker='o')
+    plt.title(f"Ciclo anual medio (reemplazado por media): {stid}")
     plt.xlabel("Meses")
     plt.ylabel("Caudal medio (m³/s)")
     plt.xticks(range(1,13), calendar.month_abbr[1:13])
     plt.tight_layout()
     plt.show()
+
 
 
 #-------------------------------------------
@@ -335,7 +339,7 @@ def analisis_hidrometrico(nombre_archivo, stid):
 #-------------------------------------
 
 if __name__ == "__main__":
-    analisis_hidrometrico("elcolorado.txt","El Colorado")
+    analisis_hidrometrico("rio paraguay.txt","Río Paraguay")
 
 
 
