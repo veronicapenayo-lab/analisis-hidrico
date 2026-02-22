@@ -192,7 +192,7 @@ if archivos_subidos:
 
     st.sidebar.markdown("---")
     st.sidebar.download_button(
-        label="📥 Descargar todo en Excel",
+        label="📥 Descargar informe en Excel",
         data=output.getvalue(),
         file_name="Analisis_Hidrometrico.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
