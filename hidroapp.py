@@ -46,14 +46,32 @@ if archivos_subidos:
     st.subheader("Resumen estadístico comparativo")
     df_resumen = pd.DataFrame(resumen_datos)
     st.dataframe(df_resumen, use_container_width=True) # Una tabla más moderna
+    
+    
+    
+    # --- GRÁFICO INTERACTIVO ---
+st.subheader("Hidrogramas comparativos")
+st.info("💡 Tip: Podés hacer zoom seleccionando un área con el mouse o doble clic para volver al inicio.")
 
-    # --- 2. GRÁFICO (Ahora abajo) ---
-    st.subheader("Hidrogramas de caudales")
-    ax.set_ylabel("Caudal (m³/s)")
-    ax.set_xlabel("Año")
-    ax.legend(loc='upper right')
-    ax.grid(True, linestyle='--', alpha=0.6)
-    st.pyplot(fig)
+# Creamos un DataFrame que una todas las series por fecha
+if archivos_subidos:
+    df_grafico = pd.DataFrame()
+    for arc in archivos_subidos:
+        # Aquí usamos tus funciones ya conocidas
+        encabezado, datos = leer_archivo(f"temp_{arc.name}.txt") # Usamos nombres únicos
+        fechas, caudales = convertir_formatos(datos)
+        
+        # Creamos una serie temporal para esta estación
+        serie_estacion = pd.Series(caudales, index=fechas, name=arc.name)
+        
+        if df_grafico.empty:
+            df_grafico = serie_estacion.to_frame()
+        else:
+            df_grafico = df_grafico.join(serie_estacion, how='outer')
+
+    # El comando "mágico" para el gráfico interactivo
+    st.line_chart(df_grafico)
+
 
     # --- 3. EXPORTACIÓN PROFESIONAL ---
     st.subheader("📥 Generar informe")
