@@ -26,38 +26,38 @@ import calendar
 
 # Definimos una función que permita leer un archivo en formato .txt y lo separe en secciones.
 
-def leer_archivo (lineas):
-   
+def leer_archivo (entrada):
     """
-    Lee un archivo txt y separa encabezado y datos.
-
-    Retorna: 
-        lista: encabezado.
-        lista: datos.
+    Lee datos hidrométricos. Soporta tanto una ruta de archivo (Spyder)
+    como una lista de líneas (Streamlit).
     """
+    encabezado = []
+    datos = []
     
-    # Creamos listas vacías donde se guardará la información del archivo txt.
-    encabezado =[]  
-    datos =[]
+    # Si 'entrada' es un texto (ruta), abrimos el archivo.
+    # Si es una lista, la usamos directamente.
+    if isinstance(entrada, str):
+        with open(entrada, "r", encoding="windows-1252") as f:
+            lineas = f.readlines()
+    else:
+        lineas = entrada
+
     for linea in lineas:
         linea = linea.strip()
-            # Ignoramos líneas vacías
         if not linea:
-                continue
-
-    # Si empieza con "#" es encabezado
+            continue
         if linea.startswith("#"):
-                encabezado.append(linea)
-                continue
-
-     # Si tiene el patrón típico de columnas (separadas por ";"), guardamos como dato
+            encabezado.append(linea)
+            continue
+        
         partes = linea.split(";")
-        if len(partes) == 5 and partes[0].count("-") == 2 and partes[0][:4].isdigit():
-                datos.append(partes)
+        if len(partes) >= 5 and partes[0].count("-") == 2:
+            datos.append(partes)
         else:
-                encabezado.append(linea)
+            encabezado.append(linea)
+            
     return encabezado, datos
-    
+      
 
 #>>>>>> CONVERTIR FORMATOS <<<<<<
 
@@ -339,7 +339,12 @@ def analisis_hidrometrico(nombre_archivo, stid):
 #-------------------------------------
 
 if __name__ == "__main__":
-    analisis_hidrometrico("rio paraguay.txt","Río Paraguay")
+    
+    archivo_prueba = "rio paraguay.txt" 
+    nombre_estacion = "Río Paraguay"
+    
+    # IMPORTANTE: Llamamos a la función principal
+    analisis_hidrometrico(archivo_prueba, nombre_estacion)
 
 
 
